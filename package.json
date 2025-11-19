@@ -1,0 +1,36 @@
+{
+  "name": "webserver",
+  "version": "1.0.0",
+  "description": "nodejs webserver",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "check": "eslint.  && prettier --write .",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "web server"
+  ],
+  "author": "Vladimir Costas",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "morgan": "^1.10.1"
+  },
+  "devDependencies": {
+    "@eslint/compat": "^1.4.0",
+    "@eslint/css": "^0.13.0",
+    "@eslint/js": "^9.38.0",
+    "@eslint/json": "^0.13.2",
+    "@eslint/markdown": "^7.5.0",
+    "eslint": "^9.38.0",
+    "eslint-plugin-node": "^11.1.0",
+    "globals": "^16.4.0",
+    "nodemon": "^3.1.10",
+    "prettier": "^3.6.2"
+  }
+}
