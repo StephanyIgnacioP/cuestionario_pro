@@ -1,39 +1,32 @@
+import express from "express";
+import morgan from "morgan";
 import dotenv from "dotenv";
-import http from "http";
-import fs from "fs";
-import path from "path";
+import { connectDB } from "./database.js";
 import { fileURLToPath } from "url";
+import { dirname, join } from "path";
 
-dotenv.config();
-
-const PORT = process.env.PORT || 3000;
-const PUBLIC = process.env.PUBLIC_PATH || "public";
+// Configurar ruta del .env
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = dirname(__filename);
+dotenv.config({ path: join(__dirname, "..", ".env") });
 
-const PUBLIC_DIR = path.join(__dirname, "../", PUBLIC);
+const app = express();
 
-const server = http.createServer((req, res) => {
-  let filePath = req.url === "/" ? "/index.html" : req.url;
-  const fullPath = path.join(PUBLIC_DIR, filePath);
+// Middlewares
+app.use(morgan("dev"));
+app.use(express.json());
 
-  fs.readFile(fullPath, (err, content) => {
-    if (err) {
-      res.writeHead(404, { "Content-Type": "text/plain" });
-      res.end("404 Not Found");
-    } else {
-      const ext = path.extname(fullPath);
-      const mimeTypes = {
-        ".html": "text/html",
-        ".css": "text/css",
-        ".js": "application/javascript",
-      };
-      res.writeHead(200, { "Content-Type": mimeTypes[ext] || "text/plain" });
-      res.end(content);
-    }
-  });
+// Conectar a MongoDB Atlas
+connectDB();
+
+// Ruta de prueba
+app.get("/", (req, res) => {
+  res.send("Servidor funcionando con MongoDB Atlas 🔥");
 });
 
-server.listen(PORT, () => {
-  console.log(`server listening on http://localhost:${PORT}`);
+// Puerto
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en puerto ${PORT}`);
 });
