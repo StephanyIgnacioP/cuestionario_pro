@@ -1,7 +1,7 @@
 {
-  "name": "webserver",
+  "name": "cuestionario-pro",
   "version": "1.0.0",
-  "description": "nodejs webserver",
+  "description": "Sistema de cuestionarios con Node.js y MongoDBAtlas",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -9,13 +9,16 @@
     "dev": "nodemon src/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "check": "eslint.  && prettier --write .",
+    "check": "eslint . && prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
-    "web server"
+    "cuestionario",
+    "nodejs",
+    "mongodb",
+    "express"
   ],
-  "author": "Vladimir Costas",
+  "author": "TeamAda:Stephany Ignacio - Dolly Yana",
   "license": "ISC",
   "dependencies": {
     "dotenv": "^17.2.3",
