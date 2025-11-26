@@ -2,7 +2,6 @@
   "name": "cuestionario-pro",
   "version": "1.0.0",
   "description": "Sistema de cuestionarios con Node.js y MongoDBAtlas",
-  "type": "module",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",

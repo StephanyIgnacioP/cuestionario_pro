@@ -2,7 +2,7 @@
 const mongoose = require('mongoose');
 
 const subcategoriaSchema = new mongoose.Schema({
-    // Referencia a la categoría padre
+    
     id_categoria: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Categoria',
@@ -37,7 +37,9 @@ subcategoriaSchema.index({ id_categoria: 1 });
 subcategoriaSchema.index({ nombre_subcategoria: 1 });
 subcategoriaSchema.index({ activo: 1 });
 
+
 subcategoriaSchema.index({ id_categoria: 1, nombre_subcategoria: 1 }, { unique: true });
+
 
 subcategoriaSchema.statics.contarPorCategoria = function(categoriaId) {
     return this.countDocuments({ 
@@ -45,6 +47,7 @@ subcategoriaSchema.statics.contarPorCategoria = function(categoriaId) {
         activo: true 
     });
 };
+
 
 subcategoriaSchema.statics.obtenerPorCategoria = function(categoriaId, soloActivas = true) {
     const filtro = { id_categoria: categoriaId };

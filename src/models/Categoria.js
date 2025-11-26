@@ -7,7 +7,7 @@ const categoriaSchema = new mongoose.Schema({
         required: [true, 'El nombre de la categoría es requerido'],
         maxlength: [100, 'El nombre no puede exceder 100 caracteres'],
         trim: true,
-        unique: true
+        unique: true  // Ya crea índice automáticamente
     },
     descripcion: {
         type: String,
@@ -29,8 +29,9 @@ const categoriaSchema = new mongoose.Schema({
     toObject: { virtuals: true }
 });
 
-categoriaSchema.index({ nombre_categoria: 1 });
+
 categoriaSchema.index({ activo: 1 });
+
 
 categoriaSchema.virtual('subcategorias', {
     ref: 'Subcategoria',

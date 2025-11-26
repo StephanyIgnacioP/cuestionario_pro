@@ -7,7 +7,7 @@ const rangoEdadSchema = new mongoose.Schema({
         required: [true, 'El nombre del rango es requerido'],
         maxlength: [50, 'El nombre no puede exceder 50 caracteres'],
         trim: true,
-        unique: true
+        unique: true  
     },
     edad_minima: {
         type: Number,
@@ -33,11 +33,11 @@ const rangoEdadSchema = new mongoose.Schema({
     collection: 'rangos_edad'
 });
 
-rangoEdadSchema.index({ nombre_rango: 1 });
+
 rangoEdadSchema.index({ edad_minima: 1, edad_maxima: 1 });
 rangoEdadSchema.index({ activo: 1 });
 
-// Método para verificar si una edad está en el rango
+
 rangoEdadSchema.methods.incluyeEdad = function(edad) {
     return edad >= this.edad_minima && edad <= this.edad_maxima;
 };

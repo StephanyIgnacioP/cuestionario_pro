@@ -9,7 +9,7 @@ const nivelDificultadSchema = new mongoose.Schema({
             values: ['Fácil', 'Medio', 'Difícil'],
             message: '{VALUE} no es un nivel válido'
         },
-        unique: true
+        unique: true  
     },
     descripcion: {
         type: String,
@@ -25,7 +25,6 @@ const nivelDificultadSchema = new mongoose.Schema({
     collection: 'niveles_dificultad'
 });
 
-nivelDificultadSchema.index({ nivel: 1 });
 nivelDificultadSchema.index({ activo: 1 });
 
 module.exports = mongoose.model('NivelDificultad', nivelDificultadSchema);
