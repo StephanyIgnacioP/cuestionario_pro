@@ -23,13 +23,17 @@ const categoriaRoutes = require('./routes/categoriaRoutes');
 const subcategoriaRoutes = require('./routes/subcategoriaRoutes');
 const nivelDificultadRoutes = require('./routes/nivelDificultadRoutes');
 const rangoEdadRoutes = require('./routes/rangoEdadRoutes');
-
+const usuarioRoutes = require('./routes/usuarioRoutes');
+const rolRoutes = require('./routes/rolRoutes');
+const privilegioRoutes = require('./routes/privilegioRoutes');
 
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/subcategorias', subcategoriaRoutes);
 app.use('/api/niveles-dificultad', nivelDificultadRoutes);
 app.use('/api/rangos-edad', rangoEdadRoutes);
-
+app.use('/api/usuarios', usuarioRoutes);
+app.use('/api/roles', rolRoutes);
+app.use('/api/privilegios', privilegioRoutes);
 
 app.get('/api', (req, res) => {
     res.json({
