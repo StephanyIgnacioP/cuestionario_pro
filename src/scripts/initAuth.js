@@ -58,23 +58,16 @@ const rolesData = [
         ]
     },
     {
-        nombre_rol: 'Editor',
-        descripcion: 'Editor de preguntas y categorías',
+        nombre_rol: 'Editor de Preguntas',
+        descripcion: 'Editor y revisor de preguntas - Gestión completa de contenido de preguntas',
         es_sistema: true,
-        privilegios: [
-            { nombre_privilegio: 'crear_preguntas', descripcion: 'Creación de preguntas' },
-            { nombre_privilegio: 'editar_preguntas' },
-            { nombre_privilegio: 'gestionar_categorias' }
-        ]
-    },
-    {
-        nombre_rol: 'Revisor',
-        descripcion: 'Revisor y aprobador de preguntas',
-        es_sistema: true,
-        privilegios: [
-            { nombre_privilegio: 'revisar_preguntas', descripcion: 'Revisión de preguntas' },
-            { nombre_privilegio: 'publicar_preguntas' },
-            { nombre_privilegio: 'editar_preguntas' }
+        privilegios: [  
+            { nombre_privilegio: 'crear_preguntas', descripcion: 'Crear nuevas preguntas' },
+            { nombre_privilegio: 'editar_preguntas', descripcion: 'Modificar preguntas existentes' },
+            { nombre_privilegio: 'eliminar_preguntas', descripcion: 'Eliminar preguntas' },
+            { nombre_privilegio: 'revisar_preguntas', descripcion: 'Revisar preguntas de otros' },
+            { nombre_privilegio: 'publicar_preguntas', descripcion: 'Aprobar y publicar preguntas' },
+            { nombre_privilegio: 'gestionar_categorias', descripcion: 'Administrar categorías y subcategorías' }
         ]
     },
     {
@@ -87,15 +80,6 @@ const rolesData = [
             { nombre_privilegio: 'eliminar_examenes' },
             { nombre_privilegio: 'ver_examenes' },
             { nombre_privilegio: 'calificar_examenes' }
-        ]
-    },
-    {
-        nombre_rol: 'Estudiante',
-        descripcion: 'Usuario que responde exámenes',
-        es_sistema: true,
-        privilegios: [
-            { nombre_privilegio: 'ver_examenes', descripcion: 'Ver y responder exámenes' },
-            { nombre_privilegio: 'responder_examenes' }
         ]
     }
 ];
@@ -127,7 +111,7 @@ const main = async () => {
         });
         
         Object.entries(porCategoria).forEach(([cat, privs]) => {
-            console.log(`    ${cat}:`);
+            console.log(` ${cat}:`);
             privs.forEach(p => console.log(`      • ${p}`));
         });
         console.log('');
@@ -181,7 +165,7 @@ const main = async () => {
         
         console.log('   Email: admin@cuestionario.com');
         console.log('   Password: admin123');
-        console.log('    IMPORTANTE: Cambia esta contraseña en producción\n');
+        console.log('   IMPORTANTE: Cambia esta contraseña en producción\n');
         
         console.log('═══════════════════════════════════════════════════════');
         console.log('   PRÓXIMOS PASOS');
