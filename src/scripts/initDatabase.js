@@ -60,7 +60,7 @@ const rangosIniciales = [
     {
         nombre_rango: 'Adulto',
         edad_minima: 26,
-        edad_maxima: 120,
+        edad_maxima: 60,
         activo: true
     }
 ];

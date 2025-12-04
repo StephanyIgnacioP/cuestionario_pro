@@ -90,7 +90,7 @@ const usuarioSchema = new mongoose.Schema({
 });
 
 // Índices
-usuarioSchema.index({ email: 1 });
+
 usuarioSchema.index({ estado: 1 });
 usuarioSchema.index({ roles: 1 });
 

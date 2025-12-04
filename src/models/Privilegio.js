@@ -47,7 +47,7 @@ const privilegioSchema = new mongoose.Schema({
 });
 
 
-privilegioSchema.index({ nombre_privilegio: 1 });
+
 privilegioSchema.index({ categoria: 1 });
 
 

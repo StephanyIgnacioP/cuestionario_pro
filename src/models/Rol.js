@@ -61,7 +61,7 @@ const rolSchema = new mongoose.Schema({
 });
 
 
-rolSchema.index({ nombre_rol: 1 });
+
 rolSchema.index({ activo: 1 });
 
 
