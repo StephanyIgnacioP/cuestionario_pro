@@ -1,12 +1,11 @@
 // src/controllers/nivelDificultadController.js
 const NivelDificultad = require('../models/NivelDificultad');
 
-/**
- * Obtener todos los niveles de dificultad activos
- */
+
 exports.obtenerNiveles = async (req, res) => {
     try {
-        const niveles = await NivelDificultad.find({ activo: true });
+        const niveles = await NivelDificultad.find({ activo: true })
+            .sort({ nivel: 1 });
         
         res.status(200).json({
             success: true,
@@ -22,9 +21,7 @@ exports.obtenerNiveles = async (req, res) => {
     }
 };
 
-/**
- * Obtener un nivel de dificultad por ID
- */
+
 exports.obtenerNivelPorId = async (req, res) => {
     try {
         const { id } = req.params;
@@ -51,43 +48,54 @@ exports.obtenerNivelPorId = async (req, res) => {
     }
 };
 
-/**
- * Crear nuevo nivel de dificultad
- */
+
 exports.crearNivel = async (req, res) => {
     try {
         const { nivel, descripcion } = req.body;
         
-        // Validación
-        if (!nivel) {
+
+        if (!nivel || nivel.trim() === '') {
             return res.status(400).json({
                 success: false,
                 message: 'El nivel es requerido'
             });
         }
         
-        // Validar que el nivel sea uno de los valores permitidos
+
         const nivelesPermitidos = ['Fácil', 'Medio', 'Difícil'];
-        if (!nivelesPermitidos.includes(nivel)) {
+        if (!nivelesPermitidos.includes(nivel.trim())) {
             return res.status(400).json({
                 success: false,
-                message: `El nivel debe ser uno de: ${nivelesPermitidos.join(', ')}`
+                message: 'El nivel debe ser uno de: Fácil, Medio, Difícil',
+                valores_permitidos: nivelesPermitidos
             });
         }
         
-        // Verificar si ya existe
-        const nivelExistente = await NivelDificultad.findOne({ nivel });
+
+        if (descripcion && descripcion.trim().length > 255) {
+            return res.status(400).json({
+                success: false,
+                message: 'La descripción no puede exceder 255 caracteres'
+            });
+        }
+        
+  
+        const nivelExistente = await NivelDificultad.findOne({ 
+            nivel: nivel.trim(),
+            activo: true 
+        });
+        
         if (nivelExistente) {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe un nivel con ese nombre'
+                message: 'Ya existe un nivel de dificultad con ese valor'
             });
         }
         
+        
         const nuevoNivel = await NivelDificultad.create({
-            nivel,
-            descripcion,
-            activo: true
+            nivel: nivel.trim(),
+            descripcion: descripcion ? descripcion.trim() : undefined
         });
         
         res.status(201).json({
@@ -96,6 +104,15 @@ exports.crearNivel = async (req, res) => {
             data: nuevoNivel
         });
     } catch (error) {
+        
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Error de validación',
+                errors: Object.values(error.errors).map(e => e.message)
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error al crear nivel de dificultad',
@@ -104,57 +121,92 @@ exports.crearNivel = async (req, res) => {
     }
 };
 
-/**
- * Actualizar nivel de dificultad
- */
+
 exports.actualizarNivel = async (req, res) => {
     try {
         const { id } = req.params;
         const { nivel, descripcion, activo } = req.body;
         
-        // Si se está actualizando el nivel, validar
-        if (nivel) {
-            const nivelesPermitidos = ['Fácil', 'Medio', 'Difícil'];
-            if (!nivelesPermitidos.includes(nivel)) {
-                return res.status(400).json({
-                    success: false,
-                    message: `El nivel debe ser uno de: ${nivelesPermitidos.join(', ')}`
-                });
-            }
-            
-            // Verificar si ya existe otro con ese nombre
-            const nivelExistente = await NivelDificultad.findOne({ 
-                nivel,
-                _id: { $ne: id }
-            });
-            
-            if (nivelExistente) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Ya existe otro nivel con ese nombre'
-                });
-            }
-        }
-        
-        const nivelActualizado = await NivelDificultad.findByIdAndUpdate(
-            id,
-            { nivel, descripcion, activo },
-            { new: true, runValidators: true }
-        );
-        
-        if (!nivelActualizado) {
+
+        const nivelDificultad = await NivelDificultad.findById(id);
+        if (!nivelDificultad) {
             return res.status(404).json({
                 success: false,
                 message: 'Nivel de dificultad no encontrado'
             });
         }
+   
+        if (nivel !== undefined) {
+            if (!nivel || nivel.trim() === '') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nivel no puede estar vacío'
+                });
+            }
+           
+            const nivelesPermitidos = ['Fácil', 'Medio', 'Difícil'];
+            if (!nivelesPermitidos.includes(nivel.trim())) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nivel debe ser uno de: Fácil, Medio, Difícil',
+                    valores_permitidos: nivelesPermitidos
+                });
+            }
+            
+
+            const nivelExistente = await NivelDificultad.findOne({ 
+                nivel: nivel.trim(),
+                _id: { $ne: id },
+                activo: true
+            });
+            
+            if (nivelExistente) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ya existe otro nivel de dificultad con ese valor'
+                });
+            }
+            
+            nivelDificultad.nivel = nivel.trim();
+        }
+        
+
+        if (descripcion !== undefined) {
+            if (descripcion && descripcion.trim().length > 255) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La descripción no puede exceder 255 caracteres'
+                });
+            }
+            nivelDificultad.descripcion = descripcion ? descripcion.trim() : '';
+        }
+
+        if (activo !== undefined) {
+            if (typeof activo !== 'boolean') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El campo activo debe ser true o false'
+                });
+            }
+            nivelDificultad.activo = activo;
+        }
+        
+        await nivelDificultad.save();
         
         res.status(200).json({
             success: true,
             message: 'Nivel de dificultad actualizado exitosamente',
-            data: nivelActualizado
+            data: nivelDificultad
         });
     } catch (error) {
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                success: false,
+                message: 'Error de validación',
+                errors: Object.values(error.errors).map(e => e.message)
+            });
+        }
+        
         res.status(500).json({
             success: false,
             message: 'Error al actualizar nivel de dificultad',
@@ -163,18 +215,11 @@ exports.actualizarNivel = async (req, res) => {
     }
 };
 
-/**
- * Eliminar nivel de dificultad (eliminación lógica)
- */
 exports.eliminarNivel = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const nivel = await NivelDificultad.findByIdAndUpdate(
-            id,
-            { activo: false },
-            { new: true }
-        );
+        const nivel = await NivelDificultad.findById(id);
         
         if (!nivel) {
             return res.status(404).json({
@@ -182,6 +227,10 @@ exports.eliminarNivel = async (req, res) => {
                 message: 'Nivel de dificultad no encontrado'
             });
         }
+        
+
+        nivel.activo = false;
+        await nivel.save();
         
         res.status(200).json({
             success: true,

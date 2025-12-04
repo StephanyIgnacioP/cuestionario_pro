@@ -2,10 +2,11 @@
 const Subcategoria = require('../models/Subcategoria');
 const Categoria = require('../models/Categoria');
 
+
 exports.obtenerSubcategorias = async (req, res) => {
     try {
         const subcategorias = await Subcategoria.find({ activo: true })
-            .populate('id_categoria', 'nombre_categoria descripcion')
+            .populate('id_categoria', 'nombre_categoria')
             .sort({ nombre_subcategoria: 1 });
         
         res.status(200).json({
@@ -49,74 +50,111 @@ exports.obtenerSubcategoriaPorId = async (req, res) => {
     }
 };
 
+
 exports.obtenerSubcategoriasPorCategoria = async (req, res) => {
     try {
         const { categoriaId } = req.params;
         
-        const categoria = await Categoria.findById(categoriaId);
-        if (!categoria) {
-            return res.status(404).json({
-                success: false,
-                message: 'Categoría no encontrada'
-            });
-        }
-        
-        const subcategorias = await Subcategoria.obtenerPorCategoria(categoriaId);
+        const subcategorias = await Subcategoria.find({
+            id_categoria: categoriaId,
+            activo: true
+        }).sort({ nombre_subcategoria: 1 });
         
         res.status(200).json({
             success: true,
-            categoria: {
-                id: categoria._id,
-                nombre: categoria.nombre_categoria
-            },
             cantidad: subcategorias.length,
             data: subcategorias
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error al obtener subcategorías por categoría',
+            message: 'Error al obtener subcategorías',
             error: error.message
         });
     }
 };
 
+
+exports.contarSubcategoriasPorCategoria = async (req, res) => {
+    try {
+        const { categoriaId } = req.params;
+        
+        const cantidad = await Subcategoria.contarPorCategoria(categoriaId);
+        
+        res.status(200).json({
+            success: true,
+            data: {
+                id_categoria: categoriaId,
+                cantidad_subcategorias: cantidad
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al contar subcategorías',
+            error: error.message
+        });
+    }
+};
+
+
 exports.crearSubcategoria = async (req, res) => {
     try {
         const { id_categoria, nombre_subcategoria, descripcion } = req.body;
         
-        if (!id_categoria) {
+        if (!id_categoria || id_categoria.trim() === '') {
             return res.status(400).json({
                 success: false,
                 message: 'El ID de la categoría es requerido'
             });
         }
         
-        if (!nombre_subcategoria) {
+
+        if (!nombre_subcategoria || nombre_subcategoria.trim() === '') {
             return res.status(400).json({
                 success: false,
                 message: 'El nombre de la subcategoría es requerido'
             });
         }
         
-        const categoria = await Categoria.findById(id_categoria);
-        if (!categoria) {
+
+        if (nombre_subcategoria.trim().length > 100) {
+            return res.status(400).json({
+                success: false,
+                message: 'El nombre no puede exceder 100 caracteres'
+            });
+        }
+        
+
+        if (descripcion && descripcion.trim().length > 255) {
+            return res.status(400).json({
+                success: false,
+                message: 'La descripción no puede exceder 255 caracteres'
+            });
+        }
+        
+
+        const categoriaExiste = await Categoria.findById(id_categoria);
+        
+        if (!categoriaExiste) {
             return res.status(404).json({
                 success: false,
                 message: 'La categoría especificada no existe'
             });
         }
         
-        if (!categoria.activo) {
+
+        if (!categoriaExiste.activo) {
             return res.status(400).json({
                 success: false,
-                message: 'No se puede agregar subcategoría a una categoría inactiva'
+                message: 'No se puede crear una subcategoría en una categoría inactiva'
             });
         }
         
-        const subcategoriaExistente = await Subcategoria.findOne({ 
-            id_categoria,
-            nombre_subcategoria 
+        const subcategoriaExistente = await Subcategoria.findOne({
+            id_categoria: id_categoria,
+            nombre_subcategoria: nombre_subcategoria.trim(),
+            activo: true
         });
         
         if (subcategoriaExistente) {
@@ -126,14 +164,14 @@ exports.crearSubcategoria = async (req, res) => {
             });
         }
         
+
         const nuevaSubcategoria = await Subcategoria.create({
-            id_categoria,
-            nombre_subcategoria,
-            descripcion,
-            activo: true
+            id_categoria: id_categoria,
+            nombre_subcategoria: nombre_subcategoria.trim(),
+            descripcion: descripcion ? descripcion.trim() : undefined
         });
         
-        // Populate para devolver la información de la categoría
+
         await nuevaSubcategoria.populate('id_categoria', 'nombre_categoria');
         
         res.status(201).json({
@@ -142,10 +180,20 @@ exports.crearSubcategoria = async (req, res) => {
             data: nuevaSubcategoria
         });
     } catch (error) {
-        if (error.code === 11000) {
+
+        if (error.name === 'ValidationError') {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe una subcategoría con ese nombre en esta categoría'
+                message: 'Error de validación',
+                errors: Object.values(error.errors).map(e => e.message)
+            });
+        }
+        
+
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'ID de categoría inválido'
             });
         }
         
@@ -157,37 +205,72 @@ exports.crearSubcategoria = async (req, res) => {
     }
 };
 
+
 exports.actualizarSubcategoria = async (req, res) => {
     try {
         const { id } = req.params;
         const { id_categoria, nombre_subcategoria, descripcion, activo } = req.body;
         
-        if (id_categoria) {
-            const categoria = await Categoria.findById(id_categoria);
-            if (!categoria) {
+
+        const subcategoria = await Subcategoria.findById(id);
+        if (!subcategoria) {
+            return res.status(404).json({
+                success: false,
+                message: 'Subcategoría no encontrada'
+            });
+        }
+        
+        if (id_categoria !== undefined) {
+            if (!id_categoria || id_categoria.trim() === '') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El ID de la categoría no puede estar vacío'
+                });
+            }
+            
+
+            const categoriaExiste = await Categoria.findById(id_categoria);
+            
+            if (!categoriaExiste) {
                 return res.status(404).json({
                     success: false,
                     message: 'La categoría especificada no existe'
                 });
             }
-        }
-        
-        if (nombre_subcategoria || id_categoria) {
-            const subcategoriaActual = await Subcategoria.findById(id);
-            if (!subcategoriaActual) {
-                return res.status(404).json({
+            
+
+            if (!categoriaExiste.activo) {
+                return res.status(400).json({
                     success: false,
-                    message: 'Subcategoría no encontrada'
+                    message: 'No se puede asignar a una categoría inactiva'
                 });
             }
             
-            const categoriaABuscar = id_categoria || subcategoriaActual.id_categoria;
-            const nombreABuscar = nombre_subcategoria || subcategoriaActual.nombre_subcategoria;
+            subcategoria.id_categoria = id_categoria;
+        }
+        
+
+        if (nombre_subcategoria !== undefined) {
+            if (!nombre_subcategoria || nombre_subcategoria.trim() === '') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nombre de la subcategoría no puede estar vacío'
+                });
+            }
             
-            const subcategoriaExistente = await Subcategoria.findOne({ 
-                id_categoria: categoriaABuscar,
-                nombre_subcategoria: nombreABuscar,
-                _id: { $ne: id }
+            if (nombre_subcategoria.trim().length > 100) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El nombre no puede exceder 100 caracteres'
+                });
+            }
+            
+
+            const subcategoriaExistente = await Subcategoria.findOne({
+                id_categoria: subcategoria.id_categoria,
+                nombre_subcategoria: nombre_subcategoria.trim(),
+                _id: { $ne: id },
+                activo: true
             });
             
             if (subcategoriaExistente) {
@@ -196,31 +279,53 @@ exports.actualizarSubcategoria = async (req, res) => {
                     message: 'Ya existe otra subcategoría con ese nombre en esta categoría'
                 });
             }
+            
+            subcategoria.nombre_subcategoria = nombre_subcategoria.trim();
         }
         
-        const subcategoriaActualizada = await Subcategoria.findByIdAndUpdate(
-            id,
-            { id_categoria, nombre_subcategoria, descripcion, activo },
-            { new: true, runValidators: true }
-        ).populate('id_categoria', 'nombre_categoria');
-        
-        if (!subcategoriaActualizada) {
-            return res.status(404).json({
-                success: false,
-                message: 'Subcategoría no encontrada'
-            });
+
+        if (descripcion !== undefined) {
+            if (descripcion && descripcion.trim().length > 255) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'La descripción no puede exceder 255 caracteres'
+                });
+            }
+            subcategoria.descripcion = descripcion ? descripcion.trim() : '';
         }
+        
+
+        if (activo !== undefined) {
+            if (typeof activo !== 'boolean') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'El campo activo debe ser true o false'
+                });
+            }
+            subcategoria.activo = activo;
+        }
+        
+        await subcategoria.save();
+        await subcategoria.populate('id_categoria', 'nombre_categoria');
         
         res.status(200).json({
             success: true,
             message: 'Subcategoría actualizada exitosamente',
-            data: subcategoriaActualizada
+            data: subcategoria
         });
     } catch (error) {
-        if (error.code === 11000) {
+        if (error.name === 'ValidationError') {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe otra subcategoría con ese nombre en esta categoría'
+                message: 'Error de validación',
+                errors: Object.values(error.errors).map(e => e.message)
+            });
+        }
+        
+        if (error.name === 'CastError') {
+            return res.status(400).json({
+                success: false,
+                message: 'ID inválido'
             });
         }
         
@@ -232,15 +337,12 @@ exports.actualizarSubcategoria = async (req, res) => {
     }
 };
 
+
 exports.eliminarSubcategoria = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const subcategoria = await Subcategoria.findByIdAndUpdate(
-            id,
-            { activo: false },
-            { new: true }
-        ).populate('id_categoria', 'nombre_categoria');
+        const subcategoria = await Subcategoria.findById(id);
         
         if (!subcategoria) {
             return res.status(404).json({
@@ -248,6 +350,9 @@ exports.eliminarSubcategoria = async (req, res) => {
                 message: 'Subcategoría no encontrada'
             });
         }
+        
+        subcategoria.activo = false;
+        await subcategoria.save();
         
         res.status(200).json({
             success: true,
@@ -258,37 +363,6 @@ exports.eliminarSubcategoria = async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Error al eliminar subcategoría',
-            error: error.message
-        });
-    }
-};
-
-exports.contarSubcategoriasPorCategoria = async (req, res) => {
-    try {
-        const { categoriaId } = req.params;
-        
-        const categoria = await Categoria.findById(categoriaId);
-        if (!categoria) {
-            return res.status(404).json({
-                success: false,
-                message: 'Categoría no encontrada'
-            });
-        }
-        
-        const cantidad = await Subcategoria.contarPorCategoria(categoriaId);
-        
-        res.status(200).json({
-            success: true,
-            categoria: {
-                id: categoria._id,
-                nombre: categoria.nombre_categoria
-            },
-            cantidad_subcategorias: cantidad
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error al contar subcategorías',
             error: error.message
         });
     }
