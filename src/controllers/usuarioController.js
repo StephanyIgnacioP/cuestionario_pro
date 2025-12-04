@@ -2,13 +2,12 @@
 const Usuario = require('../models/Usuario');
 const Rol = require('../models/Rol');
 
-
 exports.obtenerUsuarios = async (req, res) => {
     try {
         const usuarios = await Usuario.find({ estado: { $ne: 'inactivo' } })
-            .populate('roles', 'nombre_rol descripcion')
+            .populate('roles', 'nombre_rol')
             .select('-password')
-            .sort({ nombre: 1 });
+            .sort({ fecha_registro: -1 });
         
         res.status(200).json({
             success: true,
@@ -24,13 +23,12 @@ exports.obtenerUsuarios = async (req, res) => {
     }
 };
 
-
 exports.obtenerUsuarioPorId = async (req, res) => {
     try {
         const { id } = req.params;
         
         const usuario = await Usuario.findById(id)
-            .populate('roles', 'nombre_rol descripcion privilegios')
+            .populate('roles', 'nombre_rol privilegios')
             .select('-password');
         
         if (!usuario) {
@@ -53,29 +51,18 @@ exports.obtenerUsuarioPorId = async (req, res) => {
     }
 };
 
-
 exports.crearUsuario = async (req, res) => {
     try {
         const { nombre, apellido, email, password, roles } = req.body;
         
-
-        if (!nombre || !apellido || !email || !password) {
-            return res.status(400).json({
-                success: false,
-                message: 'Nombre, apellido, email y contraseña son requeridos'
-            });
-        }
-        
-
-        const usuarioExistente = await Usuario.buscarPorEmail(email);
+        const usuarioExistente = await Usuario.findOne({ email: email.toLowerCase() });
         if (usuarioExistente) {
             return res.status(400).json({
                 success: false,
-                message: 'Ya existe un usuario con ese email'
+                message: 'El email ya está registrado'
             });
         }
         
-
         const nuevoUsuario = await Usuario.create({
             nombre,
             apellido,
@@ -84,13 +71,14 @@ exports.crearUsuario = async (req, res) => {
             roles: roles || []
         });
         
-       
-        await nuevoUsuario.populate('roles', 'nombre_rol descripcion');
+        const usuarioCreado = await Usuario.findById(nuevoUsuario._id)
+            .populate('roles', 'nombre_rol')
+            .select('-password');
         
         res.status(201).json({
             success: true,
             message: 'Usuario creado exitosamente',
-            data: nuevoUsuario
+            data: usuarioCreado
         });
     } catch (error) {
         res.status(500).json({
@@ -101,13 +89,11 @@ exports.crearUsuario = async (req, res) => {
     }
 };
 
-
 exports.actualizarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
         const { nombre, apellido, email, estado } = req.body;
         
-       
         const usuario = await Usuario.findById(id);
         if (!usuario) {
             return res.status(404).json({
@@ -116,30 +102,35 @@ exports.actualizarUsuario = async (req, res) => {
             });
         }
         
-        
+     
         if (email && email !== usuario.email) {
-            const emailExiste = await Usuario.buscarPorEmail(email);
+            const emailExiste = await Usuario.findOne({ 
+                email: email.toLowerCase(),
+                _id: { $ne: id }
+            });
             if (emailExiste) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Ya existe otro usuario con ese email'
+                    message: 'El email ya está en uso'
                 });
             }
+            usuario.email = email;
         }
         
-        // Actualizar campos
         if (nombre) usuario.nombre = nombre;
         if (apellido) usuario.apellido = apellido;
-        if (email) usuario.email = email;
         if (estado) usuario.estado = estado;
         
         await usuario.save();
-        await usuario.populate('roles', 'nombre_rol descripcion');
+        
+        const usuarioActualizado = await Usuario.findById(id)
+            .populate('roles', 'nombre_rol')
+            .select('-password');
         
         res.status(200).json({
             success: true,
             message: 'Usuario actualizado exitosamente',
-            data: usuario
+            data: usuarioActualizado
         });
     } catch (error) {
         res.status(500).json({
@@ -155,12 +146,7 @@ exports.eliminarUsuario = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const usuario = await Usuario.findByIdAndUpdate(
-            id,
-            { estado: 'inactivo' },
-            { new: true }
-        ).select('-password');
-        
+        const usuario = await Usuario.findById(id);
         if (!usuario) {
             return res.status(404).json({
                 success: false,
@@ -168,10 +154,12 @@ exports.eliminarUsuario = async (req, res) => {
             });
         }
         
+        usuario.estado = 'inactivo';
+        await usuario.save();
+        
         res.status(200).json({
             success: true,
-            message: 'Usuario desactivado exitosamente',
-            data: usuario
+            message: 'Usuario desactivado exitosamente'
         });
     } catch (error) {
         res.status(500).json({
@@ -182,19 +170,10 @@ exports.eliminarUsuario = async (req, res) => {
     }
 };
 
-
 exports.asignarRol = async (req, res) => {
     try {
         const { id } = req.params;
         const { rolId } = req.body;
-        
-        if (!rolId) {
-            return res.status(400).json({
-                success: false,
-                message: 'El ID del rol es requerido'
-            });
-        }
-        
         
         const usuario = await Usuario.findById(id);
         if (!usuario) {
@@ -204,7 +183,6 @@ exports.asignarRol = async (req, res) => {
             });
         }
         
-        
         const rol = await Rol.findById(rolId);
         if (!rol) {
             return res.status(404).json({
@@ -213,14 +191,24 @@ exports.asignarRol = async (req, res) => {
             });
         }
         
+        if (usuario.roles.includes(rolId)) {
+            return res.status(400).json({
+                success: false,
+                message: 'El usuario ya tiene este rol'
+            });
+        }
         
-        await usuario.agregarRol(rolId);
-        await usuario.populate('roles', 'nombre_rol descripcion');
+        usuario.roles.push(rolId);
+        await usuario.save();
+        
+        const usuarioActualizado = await Usuario.findById(id)
+            .populate('roles', 'nombre_rol')
+            .select('-password');
         
         res.status(200).json({
             success: true,
             message: 'Rol asignado exitosamente',
-            data: usuario
+            data: usuarioActualizado
         });
     } catch (error) {
         res.status(500).json({
@@ -244,13 +232,17 @@ exports.removerRol = async (req, res) => {
             });
         }
         
-        await usuario.removerRol(rolId);
-        await usuario.populate('roles', 'nombre_rol descripcion');
+        usuario.roles = usuario.roles.filter(r => r.toString() !== rolId);
+        await usuario.save();
+        
+        const usuarioActualizado = await Usuario.findById(id)
+            .populate('roles', 'nombre_rol')
+            .select('-password');
         
         res.status(200).json({
             success: true,
             message: 'Rol removido exitosamente',
-            data: usuario
+            data: usuarioActualizado
         });
     } catch (error) {
         res.status(500).json({
@@ -261,11 +253,14 @@ exports.removerRol = async (req, res) => {
     }
 };
 
+
 exports.obtenerPrivilegiosUsuario = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const usuario = await Usuario.findById(id).populate('roles');
+        const usuario = await Usuario.findById(id)
+            .populate('roles', 'nombre_rol privilegios');
+        
         if (!usuario) {
             return res.status(404).json({
                 success: false,
@@ -273,18 +268,11 @@ exports.obtenerPrivilegiosUsuario = async (req, res) => {
             });
         }
         
-        const privilegios = await usuario.obtenerTodosPrivilegios();
+        const privilegios = usuario.obtenerTodosPrivilegios();
         
         res.status(200).json({
             success: true,
-            data: {
-                usuario: {
-                    id: usuario._id,
-                    nombre_completo: usuario.nombre_completo,
-                    email: usuario.email
-                },
-                privilegios: privilegios
-            }
+            data: privilegios
         });
     } catch (error) {
         res.status(500).json({
@@ -295,46 +283,31 @@ exports.obtenerPrivilegiosUsuario = async (req, res) => {
     }
 };
 
+
 exports.cambiarPassword = async (req, res) => {
     try {
         const { id } = req.params;
-        const { passwordActual, passwordNuevo } = req.body;
+        const { password } = req.body;
         
-        if (!passwordActual || !passwordNuevo) {
-            return res.status(400).json({
-                success: false,
-                message: 'Contraseña actual y nueva son requeridas'
-            });
-        }
-        
-        const usuario = await Usuario.findById(id).select('+password');
+        const usuario = await Usuario.findById(id);
         if (!usuario) {
             return res.status(404).json({
                 success: false,
                 message: 'Usuario no encontrado'
             });
         }
-
-        const passwordValido = await usuario.compararPassword(passwordActual);
-        if (!passwordValido) {
-            return res.status(401).json({
-                success: false,
-                message: 'Contraseña actual incorrecta'
-            });
-        }
         
-        
-        usuario.password = passwordNuevo;
+        usuario.password = password;
         await usuario.save();
         
         res.status(200).json({
             success: true,
-            message: 'Contraseña actualizada exitosamente'
+            message: 'Password actualizado exitosamente'
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error al cambiar contraseña',
+            message: 'Error al cambiar password',
             error: error.message
         });
     }

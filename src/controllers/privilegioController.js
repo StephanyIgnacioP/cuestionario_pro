@@ -1,7 +1,5 @@
 // src/controllers/privilegioController.js
 const Privilegio = require('../models/Privilegio');
-
-
 exports.obtenerPrivilegios = async (req, res) => {
     try {
         const privilegios = await Privilegio.find({ activo: true })
@@ -20,7 +18,6 @@ exports.obtenerPrivilegios = async (req, res) => {
         });
     }
 };
-
 
 exports.obtenerPrivilegiosAgrupados = async (req, res) => {
     try {
@@ -68,7 +65,6 @@ exports.obtenerPrivilegiosPorCategoria = async (req, res) => {
         });
     }
 };
-
 
 exports.obtenerPrivilegioPorId = async (req, res) => {
     try {

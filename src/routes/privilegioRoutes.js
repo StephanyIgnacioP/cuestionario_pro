@@ -2,29 +2,27 @@
 const express = require('express');
 const router = express.Router();
 const privilegioController = require('../controllers/privilegioController');
-const { proteger } = require('../middleware/auth');
-
+const { verificarToken } = require('../middleware/rbac');
 
 router.get('/', 
-    proteger,
+    verificarToken,
     privilegioController.obtenerPrivilegios
 );
 
 
 router.get('/agrupados', 
-    proteger,
+    verificarToken,
     privilegioController.obtenerPrivilegiosAgrupados
 );
 
 
 router.get('/categoria/:categoria', 
-    proteger,
+    verificarToken,
     privilegioController.obtenerPrivilegiosPorCategoria
 );
 
-
 router.get('/:id', 
-    proteger,
+    verificarToken,
     privilegioController.obtenerPrivilegioPorId
 );
 

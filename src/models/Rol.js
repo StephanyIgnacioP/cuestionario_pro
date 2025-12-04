@@ -60,15 +60,11 @@ const rolSchema = new mongoose.Schema({
     collection: 'roles'
 });
 
-
-
 rolSchema.index({ activo: 1 });
-
 
 rolSchema.methods.tienePrivilegio = function(nombrePrivilegio) {
     return this.privilegios.some(p => p.nombre_privilegio === nombrePrivilegio);
 };
-
 
 rolSchema.methods.agregarPrivilegio = async function(nombrePrivilegio, descripcion = '') {
     const existe = this.privilegios.some(p => p.nombre_privilegio === nombrePrivilegio);
@@ -82,27 +78,22 @@ rolSchema.methods.agregarPrivilegio = async function(nombrePrivilegio, descripci
     }
 };
 
-
 rolSchema.methods.removerPrivilegio = async function(nombrePrivilegio) {
     this.privilegios = this.privilegios.filter(p => p.nombre_privilegio !== nombrePrivilegio);
     await this.save();
 };
 
-
 rolSchema.methods.obtenerNombresPrivilegios = function() {
     return this.privilegios.map(p => p.nombre_privilegio);
 };
-
 
 rolSchema.statics.buscarPorNombre = function(nombreRol) {
     return this.findOne({ nombre_rol: nombreRol });
 };
 
-
 rolSchema.statics.obtenerActivos = function() {
     return this.find({ activo: true }).sort({ nombre_rol: 1 });
 };
-
 
 rolSchema.statics.contarUsuarios = async function(rolId) {
     const Usuario = mongoose.model('Usuario');

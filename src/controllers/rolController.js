@@ -1,409 +1,287 @@
-// src/controllers/rangoEdadController.js
-const RangoEdad = require('../models/RangoEdad');
+// src/controllers/rolController.js
+const Rol = require('../models/Rol');
+const Usuario = require('../models/Usuario');
 
-
-exports.obtenerRangos = async (req, res) => {
+exports.obtenerRoles = async (req, res) => {
     try {
-        const rangos = await RangoEdad.find({ activo: true })
-            .sort({ edad_minima: 1 });
+        const roles = await Rol.find({ activo: true }).sort({ nombre_rol: 1 });
         
         res.status(200).json({
             success: true,
-            cantidad: rangos.length,
-            data: rangos
+            cantidad: roles.length,
+            data: roles
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error al obtener rangos de edad',
+            message: 'Error al obtener roles',
             error: error.message
         });
     }
 };
 
-
-exports.obtenerRangoPorId = async (req, res) => {
+exports.obtenerRolPorId = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const rango = await RangoEdad.findById(id);
+        const rol = await Rol.findById(id);
         
-        if (!rango) {
+        if (!rol) {
             return res.status(404).json({
                 success: false,
-                message: 'Rango de edad no encontrado'
+                message: 'Rol no encontrado'
             });
         }
         
+        const cantidadUsuarios = await Rol.contarUsuarios(id);
+        
         res.status(200).json({
             success: true,
-            data: rango
+            data: {
+                ...rol.toObject(),
+                cantidad_usuarios: cantidadUsuarios
+            }
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error al obtener rango de edad',
+            message: 'Error al obtener rol',
             error: error.message
         });
     }
 };
 
-
-exports.buscarRangoPorEdad = async (req, res) => {
+exports.crearRol = async (req, res) => {
     try {
-        const { edad } = req.params;
+        const { nombre_rol, descripcion, privilegios } = req.body;
         
 
-        const edadNum = parseInt(edad);
-        if (isNaN(edadNum)) {
+        if (!nombre_rol) {
             return res.status(400).json({
                 success: false,
-                message: 'La edad debe ser un número válido'
+                message: 'El nombre del rol es requerido'
             });
         }
         
-        const rango = await RangoEdad.findOne({
-            edad_minima: { $lte: edadNum },
-            edad_maxima: { $gte: edadNum },
-            activo: true
-        });
-        
-        if (!rango) {
-            return res.status(404).json({
-                success: false,
-                message: 'No se encontró un rango de edad para la edad especificada'
-            });
-        }
-        
-        res.status(200).json({
-            success: true,
-            data: rango
-        });
-    } catch (error) {
-        res.status(500).json({
-            success: false,
-            message: 'Error al buscar rango de edad',
-            error: error.message
-        });
-    }
-};
-
-
-exports.crearRango = async (req, res) => {
-    try {
-        const { nombre_rango, edad_minima, edad_maxima } = req.body;
-        
-
-        if (!nombre_rango || nombre_rango.trim() === '') {
+        const rolExistente = await Rol.buscarPorNombre(nombre_rol);
+        if (rolExistente) {
             return res.status(400).json({
                 success: false,
-                message: 'El nombre del rango es requerido'
+                message: 'Ya existe un rol con ese nombre'
             });
         }
-        
-
-        if (nombre_rango.trim().length > 50) {
-            return res.status(400).json({
-                success: false,
-                message: 'El nombre no puede exceder 50 caracteres'
-            });
-        }
-        
-
-        if (edad_minima === undefined || edad_minima === null || edad_minima === '') {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad mínima es requerida'
-            });
-        }
-        
-
-        const edadMin = Number(edad_minima);
-        if (isNaN(edadMin)) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad mínima debe ser un número válido'
-            });
-        }
-        
-
-        if (edadMin < 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad mínima no puede ser negativa'
-            });
-        }
-        
-
-        if (edad_maxima === undefined || edad_maxima === null || edad_maxima === '') {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad máxima es requerida'
-            });
-        }
-        
-
-        const edadMax = Number(edad_maxima);
-        if (isNaN(edadMax)) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad máxima debe ser un número válido'
-            });
-        }
-        
-
-        if (edadMin >= edadMax) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad mínima debe ser menor que la edad máxima',
-                datos_enviados: {
-                    edad_minima: edadMin,
-                    edad_maxima: edadMax
-                }
-            });
-        }
-        
-
-        if (edadMax > 150) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad máxima no puede ser mayor a 150 años'
-            });
-        }
-        
-
-        const rangoExistente = await RangoEdad.findOne({ 
-            nombre_rango: nombre_rango.trim(),
-            activo: true 
-        });
-        
-        if (rangoExistente) {
-            return res.status(400).json({
-                success: false,
-                message: 'Ya existe un rango de edad con ese nombre'
-            });
-        }
-        
-
-        const rangosSolapados = await RangoEdad.find({
-            activo: true,
-            $or: [
-
-                { edad_minima: { $lte: edadMin }, edad_maxima: { $gte: edadMin } },
-                { edad_minima: { $lte: edadMax }, edad_maxima: { $gte: edadMax } },
-                { edad_minima: { $gte: edadMin }, edad_maxima: { $lte: edadMax } }
-            ]
-        });
-        
-        if (rangosSolapados.length > 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'El rango de edad se solapa con rangos existentes',
-                rangos_solapados: rangosSolapados.map(r => ({
-                    nombre: r.nombre_rango,
-                    rango: `${r.edad_minima} - ${r.edad_maxima}`
-                }))
-            });
-        }
-        
-
-        const nuevoRango = await RangoEdad.create({
-            nombre_rango: nombre_rango.trim(),
-            edad_minima: edadMin,
-            edad_maxima: edadMax
+    
+        const nuevoRol = await Rol.create({
+            nombre_rol,
+            descripcion,
+            privilegios: privilegios || []
         });
         
         res.status(201).json({
             success: true,
-            message: 'Rango de edad creado exitosamente',
-            data: nuevoRango
+            message: 'Rol creado exitosamente',
+            data: nuevoRol
         });
     } catch (error) {
-
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Error de validación',
-                errors: Object.values(error.errors).map(e => e.message)
-            });
-        }
-        
         res.status(500).json({
             success: false,
-            message: 'Error al crear rango de edad',
+            message: 'Error al crear rol',
             error: error.message
         });
     }
 };
 
-
-exports.actualizarRango = async (req, res) => {
+exports.actualizarRol = async (req, res) => {
     try {
         const { id } = req.params;
-        const { nombre_rango, edad_minima, edad_maxima, activo } = req.body;
+        const { nombre_rol, descripcion, privilegios, activo } = req.body;
+        
+        const rol = await Rol.findById(id).select('+es_sistema');
+        
+        if (!rol) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rol no encontrado'
+            });
+        }
+   
+        if (rol.es_sistema) {
+            return res.status(403).json({
+                success: false,
+                message: 'No se pueden editar roles del sistema'
+            });
+        }
         
        
-        const rango = await RangoEdad.findById(id);
-        if (!rango) {
-            return res.status(404).json({
-                success: false,
-                message: 'Rango de edad no encontrado'
-            });
+        if (nombre_rol && nombre_rol !== rol.nombre_rol) {
+            const rolExistente = await Rol.buscarPorNombre(nombre_rol);
+            if (rolExistente) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ya existe otro rol con ese nombre'
+                });
+            }
         }
         
-
-        let edadMin = rango.edad_minima;
-        let edadMax = rango.edad_maxima;
+        if (nombre_rol) rol.nombre_rol = nombre_rol;
+        if (descripcion !== undefined) rol.descripcion = descripcion;
+        if (privilegios !== undefined) rol.privilegios = privilegios;
+        if (activo !== undefined) rol.activo = activo;
         
-
-        if (nombre_rango !== undefined) {
-            if (!nombre_rango || nombre_rango.trim() === '') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'El nombre del rango no puede estar vacío'
-                });
-            }
-            
-            if (nombre_rango.trim().length > 50) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'El nombre no puede exceder 50 caracteres'
-                });
-            }
-            
-
-            const rangoExistente = await RangoEdad.findOne({ 
-                nombre_rango: nombre_rango.trim(),
-                _id: { $ne: id },
-                activo: true
-            });
-            
-            if (rangoExistente) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Ya existe otro rango de edad con ese nombre'
-                });
-            }
-            
-            rango.nombre_rango = nombre_rango.trim();
-        }
-        
-
-        if (edad_minima !== undefined) {
-            const edadMinNum = Number(edad_minima);
-            if (isNaN(edadMinNum)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La edad mínima debe ser un número válido'
-                });
-            }
-            
-            if (edadMinNum < 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La edad mínima no puede ser negativa'
-                });
-            }
-            
-            edadMin = edadMinNum;
-            rango.edad_minima = edadMinNum;
-        }
-        
-
-        if (edad_maxima !== undefined) {
-            const edadMaxNum = Number(edad_maxima);
-            if (isNaN(edadMaxNum)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La edad máxima debe ser un número válido'
-                });
-            }
-            
-            if (edadMaxNum > 150) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La edad máxima no puede ser mayor a 150 años'
-                });
-            }
-            
-            edadMax = edadMaxNum;
-            rango.edad_maxima = edadMaxNum;
-        }
-        
-
-        if (edadMin >= edadMax) {
-            return res.status(400).json({
-                success: false,
-                message: 'La edad mínima debe ser menor que la edad máxima',
-                valores_actuales: {
-                    edad_minima: edadMin,
-                    edad_maxima: edadMax
-                }
-            });
-        }
-        
-
-        if (activo !== undefined) {
-            if (typeof activo !== 'boolean') {
-                return res.status(400).json({
-                    success: false,
-                    message: 'El campo activo debe ser true o false'
-                });
-            }
-            rango.activo = activo;
-        }
-        
-        await rango.save();
+        await rol.save();
         
         res.status(200).json({
             success: true,
-            message: 'Rango de edad actualizado exitosamente',
-            data: rango
+            message: 'Rol actualizado exitosamente',
+            data: rol
         });
     } catch (error) {
-        if (error.name === 'ValidationError') {
-            return res.status(400).json({
-                success: false,
-                message: 'Error de validación',
-                errors: Object.values(error.errors).map(e => e.message)
-            });
-        }
-        
         res.status(500).json({
             success: false,
-            message: 'Error al actualizar rango de edad',
+            message: 'Error al actualizar rol',
             error: error.message
         });
     }
 };
 
-
-exports.eliminarRango = async (req, res) => {
+exports.eliminarRol = async (req, res) => {
     try {
         const { id } = req.params;
         
-        const rango = await RangoEdad.findById(id);
+        const rol = await Rol.findById(id).select('+es_sistema');
         
-        if (!rango) {
+        if (!rol) {
             return res.status(404).json({
                 success: false,
-                message: 'Rango de edad no encontrado'
+                message: 'Rol no encontrado'
             });
         }
         
-
-        rango.activo = false;
-        await rango.save();
+        if (rol.es_sistema) {
+            return res.status(403).json({
+                success: false,
+                message: 'No se pueden eliminar roles del sistema'
+            });
+        }
+        
+        const cantidadUsuarios = await Rol.contarUsuarios(id);
+        if (cantidadUsuarios > 0) {
+            return res.status(400).json({
+                success: false,
+                message: `No se puede eliminar el rol porque tiene ${cantidadUsuarios} usuario(s) asignado(s)`
+            });
+        }
+        
+        rol.activo = false;
+        await rol.save();
         
         res.status(200).json({
             success: true,
-            message: 'Rango de edad desactivado exitosamente',
-            data: rango
+            message: 'Rol desactivado exitosamente',
+            data: rol
         });
     } catch (error) {
         res.status(500).json({
             success: false,
-            message: 'Error al eliminar rango de edad',
+            message: 'Error al eliminar rol',
+            error: error.message
+        });
+    }
+};
+
+exports.agregarPrivilegio = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nombre_privilegio, descripcion } = req.body;
+        
+        if (!nombre_privilegio) {
+            return res.status(400).json({
+                success: false,
+                message: 'El nombre del privilegio es requerido'
+            });
+        }
+        
+        const rol = await Rol.findById(id);
+        if (!rol) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rol no encontrado'
+            });
+        }
+        
+        await rol.agregarPrivilegio(nombre_privilegio, descripcion);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Privilegio agregado exitosamente',
+            data: rol
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al agregar privilegio',
+            error: error.message
+        });
+    }
+};
+
+exports.removerPrivilegio = async (req, res) => {
+    try {
+        const { id, nombrePrivilegio } = req.params;
+        
+        const rol = await Rol.findById(id);
+        if (!rol) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rol no encontrado'
+            });
+        }
+        
+        await rol.removerPrivilegio(nombrePrivilegio);
+        
+        res.status(200).json({
+            success: true,
+            message: 'Privilegio removido exitosamente',
+            data: rol
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al remover privilegio',
+            error: error.message
+        });
+    }
+};
+
+exports.obtenerUsuariosConRol = async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const rol = await Rol.findById(id);
+        if (!rol) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rol no encontrado'
+            });
+        }
+        
+        const usuarios = await Usuario.find({ roles: id })
+            .select('nombre apellido email estado')
+            .sort({ nombre: 1 });
+        
+        res.status(200).json({
+            success: true,
+            rol: {
+                id: rol._id,
+                nombre: rol.nombre_rol
+            },
+            cantidad: usuarios.length,
+            data: usuarios
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Error al obtener usuarios',
             error: error.message
         });
     }

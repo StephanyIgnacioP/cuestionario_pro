@@ -89,11 +89,8 @@ const usuarioSchema = new mongoose.Schema({
     collection: 'usuarios'
 });
 
-// Índices
-
 usuarioSchema.index({ estado: 1 });
 usuarioSchema.index({ roles: 1 });
-
 
 usuarioSchema.pre('save', async function(next) {
     if (!this.isModified('password')) return next();
@@ -107,11 +104,9 @@ usuarioSchema.pre('save', async function(next) {
     }
 });
 
-
 usuarioSchema.methods.compararPassword = async function(passwordIngresado) {
     return await bcrypt.compare(passwordIngresado, this.password);
 };
-
 
 usuarioSchema.methods.obtenerTodosPrivilegios = async function() {
     await this.populate('roles');
@@ -131,17 +126,14 @@ usuarioSchema.methods.obtenerTodosPrivilegios = async function() {
     return Array.from(privilegiosSet);
 };
 
-
 usuarioSchema.methods.tienePrivilegio = async function(nombrePrivilegio) {
     const privilegios = await this.obtenerTodosPrivilegios();
     return privilegios.includes(nombrePrivilegio);
 };
 
-
 usuarioSchema.methods.tieneRol = function(nombreRol) {
     return this.roles.some(rol => rol.nombre_rol === nombreRol);
 };
-
 
 usuarioSchema.methods.registrarIntentoFallido = async function() {
     this.intentos_fallidos += 1;
@@ -153,7 +145,6 @@ usuarioSchema.methods.registrarIntentoFallido = async function() {
     await this.save();
 };
 
-
 usuarioSchema.methods.resetearIntentosFallidos = async function() {
     this.intentos_fallidos = 0;
     this.bloqueado_hasta = null;
@@ -161,11 +152,9 @@ usuarioSchema.methods.resetearIntentosFallidos = async function() {
     await this.save();
 };
 
-
 usuarioSchema.methods.estaBloqueado = function() {
     return this.bloqueado_hasta && this.bloqueado_hasta > Date.now();
 };
-
 
 usuarioSchema.methods.agregarRol = async function(rolId) {
     if (!this.roles.includes(rolId)) {
@@ -174,22 +163,18 @@ usuarioSchema.methods.agregarRol = async function(rolId) {
     }
 };
 
-
 usuarioSchema.methods.removerRol = async function(rolId) {
     this.roles = this.roles.filter(id => !id.equals(rolId));
     await this.save();
 };
 
-
 usuarioSchema.statics.buscarPorEmail = function(email) {
     return this.findOne({ email: email.toLowerCase() });
 };
 
-
 usuarioSchema.virtual('nombre_completo').get(function() {
     return `${this.nombre} ${this.apellido}`;
 });
-
 
 usuarioSchema.methods.toJSON = function() {
     const usuario = this.toObject();

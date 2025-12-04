@@ -46,15 +46,11 @@ const privilegioSchema = new mongoose.Schema({
     collection: 'privilegios'
 });
 
-
-
 privilegioSchema.index({ categoria: 1 });
-
 
 privilegioSchema.statics.obtenerPorCategoria = function(categoria) {
     return this.find({ categoria: categoria, activo: true }).sort({ nombre_privilegio: 1 });
 };
-
 
 privilegioSchema.statics.obtenerAgrupados = async function() {
     const privilegios = await this.find({ activo: true }).sort({ categoria: 1, nombre_privilegio: 1 });

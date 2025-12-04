@@ -1,12 +1,11 @@
-
+// src/middleware/rbac.js
 const jwt = require('jsonwebtoken');
 const Usuario = require('../models/Usuario');
 
 exports.verificarToken = async (req, res, next) => {
     try {
         let token;
-        
-        // Obtener token del header Authorization
+
         if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
             token = req.headers.authorization.split(' ')[1];
         }
@@ -19,10 +18,9 @@ exports.verificarToken = async (req, res, next) => {
         }
         
         try {
-            // Verificar y decodificar token
+
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
             
-            // Obtener usuario de la base de datos
             const usuario = await Usuario.findById(decoded.id)
                 .populate('roles', 'nombre_rol privilegios')
                 .select('-password');
@@ -40,7 +38,7 @@ exports.verificarToken = async (req, res, next) => {
                     message: 'Usuario inactivo o suspendido'
                 });
             }
-            
+
             req.usuario = usuario;
             next();
             
@@ -71,7 +69,7 @@ exports.verificarRol = (...rolesPermitidos) => {
             }
             
             const rolesUsuario = req.usuario.roles.map(rol => rol.nombre_rol);
-            
+
             const tieneRol = rolesUsuario.some(rol => rolesPermitidos.includes(rol));
             
             if (!tieneRol) {
@@ -107,7 +105,6 @@ exports.verificarPrivilegio = (...privilegiosRequeridos) => {
             
             const privilegiosUsuario = await req.usuario.obtenerTodosPrivilegios();
             
-            // Verificar si tiene al menos uno de los privilegios requeridos
             const tienePrivilegio = privilegiosRequeridos.some(priv => 
                 privilegiosUsuario.includes(priv)
             );
@@ -144,11 +141,9 @@ exports.verificarPropietarioOAdmin = (campoUsuarioId = 'id') => {
             
             const recursoUsuarioId = req.params[campoUsuarioId] || req.body[campoUsuarioId];
             
-            // Verificar si es administrador
             const rolesUsuario = req.usuario.roles.map(rol => rol.nombre_rol);
             const esAdmin = rolesUsuario.includes('Administrador');
             
-            // Verificar si es el propietario
             const esPropietario = req.usuario._id.toString() === recursoUsuarioId;
             
             if (!esPropietario && !esAdmin) {
@@ -170,9 +165,8 @@ exports.verificarPropietarioOAdmin = (campoUsuarioId = 'id') => {
     };
 };
 
-
 exports.devBypass = (req, res, next) => {
-    
+
     if (process.env.NODE_ENV !== 'development') {
         return next();
     }

@@ -1,6 +1,5 @@
 // src/scripts/initDatabase.js
 /**
-
  * Ejecutar con: node src/scripts/initDatabase.js
  */
 
@@ -204,7 +203,7 @@ async function initDatabase() {
         console.log('   - Colección: rangos_edad');
         console.log('═══════════════════════════════════════════════════════\n');
 
-        // Cerrar conexión
+        
         await mongoose.connection.close();
         console.log(' Conexión cerrada correctamente');
         process.exit(0);
@@ -217,5 +216,4 @@ async function initDatabase() {
     }
 }
 
-// Ejecutar
 initDatabase();
