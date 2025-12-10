@@ -5,11 +5,14 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:https": "node src/server-https.js",
+    "generate:certs": "node scripts/generar-certificados.js",
     "dev": "nodemon src/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check": "eslint . && prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
+    
   },
   "keywords": [
     "cuestionario",
