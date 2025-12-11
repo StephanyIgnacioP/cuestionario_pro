@@ -6,13 +6,12 @@
   "scripts": {
     "start": "node src/server.js",
     "start:https": "node src/server-https.js",
-    "generate:certs": "node scripts/generar-certificados.js",
+    "generate:certs": "node src/scripts/generar-certificados.js",
     "dev": "nodemon src/server.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "check": "eslint . && prettier --write .",
     "test": "echo \"Error: no test specified\" && exit 1"
-    
   },
   "keywords": [
     "cuestionario",
@@ -28,7 +27,8 @@
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.20.0",
-    "morgan": "^1.10.1"
+    "morgan": "^1.10.1",
+    "node-forge": "^1.3.3"
   },
   "devDependencies": {
     "@eslint/compat": "^1.4.0",
