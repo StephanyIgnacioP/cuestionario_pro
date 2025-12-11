@@ -155,3 +155,8 @@ coverage/
 .vscode/
 .idea/
 
+# Certificados SSL
+certs/
+*.pem
+*.key
+*.crt
