@@ -1,7 +1,6 @@
 {
   "name": "cuestionario-pro",
   "version": "1.0.0",
-  
   "description": "Sistema de cuestionarios con Node.js y MongoDBAtlas",
   "main": "src/server.js",
   "scripts": {
@@ -27,11 +26,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
-    "http2-express-bridge": "^1.0.7",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.20.0",
     "morgan": "^1.10.1",
-    "node-forge": "^1.3.3"
+    "node-forge": "^1.3.3",
+    "spdy": "^4.0.2"
   },
   "devDependencies": {
     "@eslint/compat": "^1.4.0",
