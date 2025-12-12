@@ -1,0 +1,584 @@
+═══════════════════════════════════════════════════════════════════════════════
+  SISTEMA DE CUESTIONARIOS PRO - GUÍA DE INSTALACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+Proyecto: Sistema de Cuestionarios con JWT/RBAC y HTTPS
+Autores: TeamAda - Stephany Ignacio Paredes, Dolly Yana Yujra
+Versión: 2.0.0
+Node.js: v22.14.0 requerido
+Sistema operativo: Windows 11
+Fecha: Diciembre 2025
+
+═══════════════════════════════════════════════════════════════════════════════
+  TABLA DE CONTENIDOS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. REQUISITOS PREVIOS
+2. INSTALACIÓN DE DEPENDENCIAS
+3. CONFIGURACIÓN DE MONGODB ATLAS
+4. CONFIGURACIÓN DE VARIABLES DE ENTORNO (.env)
+5. GENERACIÓN DE CERTIFICADOS SSL (HTTPS)
+6. INICIALIZACIÓN DE BASE DE DATOS
+7. GENERACIÓN DE TOKEN JWT
+8. EJECUCIÓN DEL SERVIDOR
+9. PRUEBAS Y VERIFICACIÓN
+10. ESTRUCTURA DE ARCHIVOS
+
+═══════════════════════════════════════════════════════════════════════════════
+  1. REQUISITOS PREVIOS
+═══════════════════════════════════════════════════════════════════════════════
+
+✓ Node.js v22.14.0 
+  Descargar: https://nodejs.org/
+
+✓ npm v9 o superior (incluido con Node.js)
+
+✓ Git (opcional, para clonar el repositorio)
+  Descargar: https://git-scm.com/
+
+✓ Cuenta en MongoDB Atlas (GRATIS)
+  Registrarse: https://www.mongodb.com/cloud/atlas/register
+
+✓ Editor de código (recomendado: VS Code)
+  Descargar: https://code.visualstudio.com/
+
+═══════════════════════════════════════════════════════════════════════════════
+  2. INSTALACIÓN DE DEPENDENCIAS
+═══════════════════════════════════════════════════════════════════════════════
+
+Abrir terminal en la carpeta del proyecto y ejecutar:
+
+    npm install
+
+Este comando instalará todas las dependencias listadas en package.json:
+
+DEPENDENCIAS DE PRODUCCIÓN:
+  • bcryptjs (v3.0.3)       - Encriptación de contraseñas
+  • cors (v2.8.5)           - Cross-Origin Resource Sharing
+  • dotenv (v17.2.3)        - Variables de entorno
+  • express (v5.1.0)        - Framework web
+  • jsonwebtoken (v9.0.2)   - Autenticación JWT
+  • mongoose (v8.20.0)      - ODM para MongoDB
+  • morgan (v1.10.1)        - Logger HTTP
+  • node-forge (v1.3.3)     - Generación de certificados SSL
+  • spdy (v4.0.2)           - Soporte HTTP/2
+
+DEPENDENCIAS DE DESARROLLO:
+  • eslint (v9.38.0)        - Linter de código
+  • prettier (v3.6.2)       - Formateador de código
+  • nodemon (v3.1.10)       - Auto-reinicio en desarrollo
+
+═══════════════════════════════════════════════════════════════════════════════
+  3. CONFIGURACIÓN DE MONGODB ATLAS
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: CREAR CUENTA Y CLUSTER
+────────────────────────────────
+
+1. Ir a: https://www.mongodb.com/cloud/atlas/register
+2. Crear cuenta (puede usar Google/GitHub)
+3. Crear un cluster GRATUITO (M0 Sandbox)
+4. Elegir:
+   - Provider: AWS
+   - Region: Más cercana a Bolivia (ej: São Paulo)
+   - Cluster Name: Cluster0
+
+PASO 2: CONFIGURAR ACCESO DE RED
+─────────────────────────────────
+
+1. En el dashboard, ir a "Network Access"
+2. Click "Add IP Address"
+3. Click "Allow Access from Anywhere" (0.0.0.0/0)
+     Solo para desarrollo. En producción usar IP específica.
+4. Click "Confirm"
+
+PASO 3: CREAR USUARIO DE BASE DE DATOS
+───────────────────────────────────────
+
+1. Ir a "Database Access"
+2. Click "Add New Database User"
+3. Elegir: "Password" (no SCRAM)
+4. Ingresar:
+   - Username: cuestionario_user
+   - Password: [GENERAR PASSWORD SEGURO]
+      GUARDAR ESTE PASSWORD - Lo necesitarás para el .env
+5. Database User Privileges: "Atlas admin"
+6. Click "Add User"
+
+PASO 4: OBTENER STRING DE CONEXIÓN
+───────────────────────────────────
+
+1. Ir a "Database" (Databases)
+2. Click "Connect" en tu cluster
+3. Elegir "Connect your application"
+4. Driver: Node.js
+5. Version: 5.5 or later
+6. Copiar el string de conexión:
+
+   mongodb+srv://cuestionario_user:<password>@cluster0.xxxxx.mongodb.net/?retryWrites=true&w=majority
+
+7. Reemplazar <password> con tu password del PASO 3
+8. Agregar el nombre de la base de datos después de .net/
+
+   EJEMPLO FINAL:
+   mongodb+srv://cuestionario_user:MiPassword123@cluster0.abc12.mongodb.net/cuestionario_pro?retryWrites=true&w=majority
+
+   IMPORTANTE: Nunca subir esta URL a GitHub. Va en el archivo .env
+
+═══════════════════════════════════════════════════════════════════════════════
+  4. CONFIGURACIÓN DE VARIABLES DE ENTORNO (.env)
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: CREAR ARCHIVO .env
+──────────────────────────
+
+En la raíz del proyecto, crear un archivo llamado: .env
+
+   IMPORTANTE: Este archivo NO debe subirse a GitHub (ya está en .gitignore)
+
+PASO 2: COPIAR CONFIGURACIÓN
+─────────────────────────────
+
+Copiar y pegar el siguiente contenido en el archivo .env:
+
+────────────────────────────────────────────────────────────────────────────
+# MONGODB ATLAS
+# Copiar la URL completa obtenida en el PASO 4 de MongoDB Atlas
+MONGODB_URI=mongodb+srv://cuestionario_user:TU_PASSWORD@cluster0.xxxxx.mongodb.net/cuestionario_pro?retryWrites=true&w=majority
+
+# JWT (JSON WEB TOKEN)
+# Generar un secret aleatorio de al menos 32 caracteres
+# Puede usar: https://www.random.org/strings/
+JWT_SECRET=tu_clave_secreta_super_segura_minimo_32_caracteres
+JWT_EXPIRE=24h
+
+# SERVIDOR
+PORT=3000
+NODE_ENV=development
+
+# HTTPS Y HTTP/2
+# true = activar HTTPS, false = usar HTTP normal
+USAR_HTTPS=true
+
+# true = activar HTTP/2, false = usar HTTP/1.1
+USAR_HTTP2=true
+────────────────────────────────────────────────────────────────────────────
+
+PASO 3: PERSONALIZAR VALORES
+─────────────────────────────
+
+Reemplazar:
+  • TU_PASSWORD          → Password del usuario de MongoDB (PASO 3)
+  • cluster0.xxxxx       → Tu cluster URL de MongoDB
+  • JWT_SECRET           → Generar string aleatorio de 32+ caracteres
+
+EJEMPLO DE .env COMPLETO:
+────────────────────────────────────────────────────────────────────────────
+MONGODB_URI=mongodb+srv://cuestionario_user:MiPassword123@cluster0.abc12.mongodb.net/cuestionario_pro?retryWrites=true&w=majority
+JWT_SECRET=a8f3d9e2b7c4f1e8d6a5b9c3e7f2d4a1b6c8e3f7d2a5
+JWT_EXPIRE=24h
+PORT=3000
+NODE_ENV=development
+USAR_HTTPS=true
+USAR_HTTP2=true
+────────────────────────────────────────────────────────────────────────────
+  ESTE ARCHIVO .env DEBE SER CREADO LOCALMENTE
+  SI MAS DE 2 PERSONAS TRABAJAN EN ESTE PROYECTO SU ARCHIVO .env DEBE TENER EL MISMO CONTENIDO
+  NUNCA SUBIR EL ARCHIVO .env A GITHUB
+
+═══════════════════════════════════════════════════════════════════════════════
+  5. GENERACIÓN DE CERTIFICADOS SSL (HTTPS)
+═══════════════════════════════════════════════════════════════════════════════
+
+Para usar HTTPS y HTTP/2, el servidor necesita certificados SSL.
+
+    IMPORTANTE: Los certificados NO se suben a GitHub por seguridad.
+    Cada persona debe generarlos localmente.
+
+PASO 1: GENERAR CERTIFICADOS
+─────────────────────────────
+
+Ejecutar en la terminal:
+
+    npm run generate:certs
+
+O directamente:
+
+    node src/scripts/generar-certificados.js
+
+PASO 2: VERIFICAR GENERACIÓN
+─────────────────────────────
+
+El script creará una carpeta 'certs' con 2 archivos:
+
+    src/
+    └── certs/
+        ├── key.pem    (Clave privada RSA)
+        └── cert.pem   (Certificado público)
+
+SALIDA ESPERADA:
+────────────────────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════════
+   GENERACIÓN DE CERTIFICADOS SSL (DESARROLLO)
+═══════════════════════════════════════════════════════════════════════════
+
+  Carpeta "certs" creada
+  Generando certificados SSL...
+  Certificados generados exitosamente
+
+ Archivos creados:
+   • certs/key.pem  (Clave privada) - 1.66 KB
+   • certs/cert.pem (Certificado público) - 1.40 KB
+
+ Información del Certificado:
+   Emitido para: localhost
+   Organización: Cuestionario Pro
+   País: Bolivia (BO)
+   Estado: Cochabamba
+   Válido desde: [fecha actual]
+   Válido hasta: [fecha + 365 días]
+   Algoritmo: RSA 2048 bits
+   Firma: SHA-256
+────────────────────────────────────────────────────────────────────────────
+
+PASO 3: CONFIGURACIÓN EN server-https.js
+─────────────────────────────────────────
+
+Los certificados se cargan automáticamente en src/server-https.js:
+
+    const certPath = path.join(__dirname, 'certs');
+    const opciones = {
+        key: fs.readFileSync(path.join(certPath, 'key.pem')),
+        cert: fs.readFileSync(path.join(certPath, 'cert.pem'))
+    };
+
+    Los certificados generados son AUTO-FIRMADOS (solo para desarrollo)
+    El navegador mostrará advertencia de seguridad - Esto es NORMAL.
+
+    En producción, usar certificados de Let's Encrypt (gratis):
+    https://letsencrypt.org/
+
+═══════════════════════════════════════════════════════════════════════════════
+  6. INICIALIZACIÓN DE BASE DE DATOS
+═══════════════════════════════════════════════════════════════════════════════
+
+PASO 1: POBLAR DATOS INICIALES
+───────────────────────────────
+
+Ejecutar el script de inicialización:
+
+    node src/scripts/initDatabase.js
+
+Este script crea:
+  • 4 categorías de preguntas
+  • 12 subcategorías
+  • 3 niveles de dificultad (Fácil, Intermedio, Difícil)
+  • 5 rangos de edad
+
+PASO 2: CREAR SISTEMA DE AUTENTICACIÓN
+───────────────────────────────────────
+
+Ejecutar el script de autenticación:
+
+    node src/scripts/initAuth.js
+
+Este script crea:
+  • 16 privilegios en 4 categorías:
+    - Gestión de Preguntas (5 privilegios)
+    - Gestión de Exámenes (5 privilegios)
+    - Administración (4 privilegios)
+    - Reportes (2 privilegios)
+
+  • 3 roles predefinidos:
+    - Administrador (16 privilegios - acceso total)
+    - Editor de Preguntas (6 privilegios)
+    - Gestor de Exámenes (5 privilegios)
+
+  • 1 usuario administrador:
+    - Email: admin@cuestionario.com
+    - Password: admin123
+    - Rol: Administrador
+
+SALIDA ESPERADA:
+────────────────────────────────────────────────────────────────────────────
+ Conectado a MongoDB
+ 16 privilegios creados
+ 3 roles creados
+ Usuario administrador creado: admin@cuestionario.com
+ Sistema de autenticación inicializado correctamente
+────────────────────────────────────────────────────────────────────────────
+
+  CAMBIAR PASSWORD DEL ADMIN EN PRODUCCIÓN
+
+═══════════════════════════════════════════════════════════════════════════════
+  7. GENERACIÓN DE TOKEN JWT
+═══════════════════════════════════════════════════════════════════════════════
+
+Para probar la API, necesitas un token JWT válido.
+
+PASO 1: GENERAR TOKEN
+─────────────────────
+
+Ejecutar:
+
+    node src/scripts/generateToken.js admin@cuestionario.com
+
+PASO 2: COPIAR EL TOKEN
+───────────────────────
+
+El script mostrará:
+
+────────────────────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════════
+    TOKEN JWT GENERADO
+═══════════════════════════════════════════════════════════════════════════
+
+ Usuario: admin@cuestionario.com
+ Roles: Administrador
+ Expiración: 24h
+
+ TOKEN:
+ eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY3NWE4...
+
+ Copia este token y úsalo en el header de tus peticiones:
+   Authorization: Bearer [TOKEN]
+────────────────────────────────────────────────────────────────────────────
+
+PASO 3: USAR EL TOKEN
+─────────────────────
+
+En Postman o cualquier cliente HTTP:
+
+Headers:
+  Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+
+═══════════════════════════════════════════════════════════════════════════════
+  8. EJECUCIÓN DEL SERVIDOR
+═══════════════════════════════════════════════════════════════════════════════
+
+OPCIÓN 1: SERVIDOR HTTP (Sin cifrado)
+──────────────────────────────────────
+
+En .env, configurar:
+    USAR_HTTPS=false
+
+Ejecutar en una terminal aparte:
+    npm start
+
+URL: http://localhost:3000
+
+────────────────────────────────────────────────────────────────────────────
+
+OPCIÓN 2: SERVIDOR HTTPS + HTTP/2 (Recomendado)
+────────────────────────────────────────────────
+
+En .env, configurar:
+    USAR_HTTPS=true
+    USAR_HTTP2=true
+
+Ejecutar:
+    node src/server-https.js
+
+URL: https://localhost:3000
+
+SALIDA ESPERADA:
+────────────────────────────────────────────────────────────────────────────
+[dotenv] injecting env (7) from .env
+✓ Certificados SSL cargados correctamente
+
+═══════════════════════════════════════════════════════════════════════════
+      SERVIDOR HTTPS + HTTP/2 INICIADO
+═══════════════════════════════════════════════════════════════════════════
+   Puerto: 3000
+   URL: https://localhost:3000
+   Protocolo: HTTP/2 (SPDY)
+   Fallback: HTTP/1.1
+   Cifrado:  Activo
+   Compatible: Express + SPDY
+   Node.js: v22.14.0
+═══════════════════════════════════════════════════════════════════════════
+
+MongoDB conectado correctamente
+────────────────────────────────────────────────────────────────────────────
+
+    NOTA: El navegador mostrará advertencia de seguridad porque los
+    certificados son auto-firmados. Esto es NORMAL en desarrollo.
+    Click en "Avanzado" → "Continuar a localhost"
+
+═══════════════════════════════════════════════════════════════════════════════
+  9. PRUEBAS Y VERIFICACIÓN
+═══════════════════════════════════════════════════════════════════════════════
+
+VERIFICAR HTTPS Y HTTP/2
+────────────────────────
+
+Ejecutar el script de verificación:
+
+    node src/scripts/demo-reporte.js
+
+SALIDA ESPERADA:
+────────────────────────────────────────────────────────────────────────────
+═══════════════════════════════════════════════════════════════════════════
+    REPORTE DE VERIFICACIÓN: HTTPS + HTTP/2
+═══════════════════════════════════════════════════════════════════════════
+
+✓ [1/5] Verificando certificados SSL...
+    ✓ key.pem - 1.66 KB
+    ✓ cert.pem - 1.40 KB
+
+✓ [2/5] Verificando configuración .env...
+   USAR_HTTPS: ✓ true
+   USAR_HTTP2: ✓ true
+   PORT: 3000
+
+✓ [3/5] Verificando servidor...
+✓ [4/5] Conectando con cliente HTTPS...
+    ✓ Servidor respondiendo en puerto 3000
+    ✓ Status Code: 200
+    ✓ Cifrado: Activo
+
+✓ [5/5] Verificando soporte HTTP/2 nativo...
+    ✓ Cliente HTTP/2 nativo conectado exitosamente
+    ✓ Protocolo detectado: HTTP/2
+
+═══════════════════════════════════════════════════════════════════════════
+      REPORTE DE VERIFICACIÓN COMPLETADO
+═══════════════════════════════════════════════════════════════════════════
+
+  RESUMEN:
+    HTTPS:  ACTIVO
+    HTTP/2:  ACTIVO
+    Cifrado SSL/TLS:  ACTIVO
+    Puerto: 3000
+    Status Code: 200
+    Protocolo servidor: HTTP/2
+────────────────────────────────────────────────────────────────────────────
+
+PROBAR ENDPOINTS EN POSTMAN
+────────────────────────────
+
+PARA HTTP:
+
+PASO 1.Abrir Postman
+
+PASO 2.Ejecutar en una terminal aparte:
+   npm start
+
+PASO 3.Ejecutar en una terminal aparte:
+   node src/scripts/initAuth.js
+
+PASO 4. Generar token JWT para el admin:
+node src/scripts/generateToken.js admin@cuestionario.com
+
+PASO 5. Usar el token en tus peticiones:
+Authorization: Bearer [TU_TOKEN]
+
+PASO 6. Usar el token en Postman
+
+   Ver Todos los Usuarios 
+Method: GET
+URL: http://localhost:3000/api/usuarios
+
+En la pestaña "Authorization"
+1. Type: **Bearer Token**
+2. Token: **Pega el token**
+
+────────────────────────────
+PARA HTTPS:
+
+PASO 1. Abrir Postman
+
+PASO 2. Ejecutar en una terminal aparte:
+        node src/server-https.js
+
+PASO 3. Ejecutar en una terminal aparte:
+        node src/scripts/demo-reporte.js
+
+PASO 4. Crear request:
+     Method: GET
+     URL: https://localhost:3000/api/usuarios
+    Headers:
+     Authorization: Bearer [TU_TOKEN_JWT]
+
+PASO 5. DESACTIVAR VERIFICAION SSL EN POSTMAN
+
+ -En la misma ventana de Postman donde dice "SSL Error: Self signed certificate"
+ -Click en el botón rojo: "Disable SSL Verification"
+ -El request debería funcionar
+
+────────────────────────────
+ Endpoints disponibles:
+   GET    /api/categorias
+   GET    /api/subcategorias
+   GET    /api/niveles-dificultad
+   GET    /api/rangos-edad
+   GET    /api/usuarios
+   GET    /api/roles
+   GET    /api/privilegios
+
+═══════════════════════════════════════════════════════════════════════════════
+  10. ESTRUCTURA DE ARCHIVOS
+═══════════════════════════════════════════════════════════════════════════════
+
+cuestionario-pro/
+│
+├── src/
+│   ├── config/
+│   │   └── database.js           # Configuración MongoDB
+│   │
+│   ├── models/
+│   │   ├── Categoria.js
+│   │   ├── Subcategoria.js
+│   │   ├── NivelDificultad.js
+│   │   ├── RangoEdad.js
+│   │   ├── Usuario.js           
+│   │   ├── Rol.js                
+│   │   └── Privilegio.js         
+│   │
+│   ├── controllers/
+│   │   ├── categoriaController.js
+│   │   ├── subcategoriaController.js
+│   │   ├── nivelDificultadController.js
+│   │   ├── rangoEdadController.js
+│   │   ├── usuarioController.js
+│   │   ├── rolController.js
+│   │   └── privilegioController.js
+│   │
+│   ├── routes/
+│   │   ├── categoriaRoutes.js
+│   │   ├── subcategoriaRoutes.js
+│   │   ├── nivelDificultadRoutes.js
+│   │   ├── rangoEdadRoutes.js
+│   │   ├── usuarioRoutes.js
+│   │   ├── rolRoutes.js
+│   │   └── privilegioRoutes.js
+│   │
+│   ├── middleware/
+│   │   └── rbac.js               # Control de acceso basado en roles
+│   │
+│   ├── scripts/
+│   │   ├── initDatabase.js       # Poblar datos iniciales
+│   │   ├── initAuth.js           # Crear roles y usuarios
+│   │   ├── generateToken.js      
+│   │   ├── generar-certificados.js  
+│   │   └── demo-reporte.js       # Verificar HTTPS/HTTP2
+│   │
+│   ├── certs/                    #  NO SUBIR A GITHUB
+│   │   ├── key.pem              # Clave privada SSL
+│   │   └── cert.pem             # Certificado público SSL
+│   │
+│   ├── server.js                 # Servidor HTTP
+│   └── server-https.js           # Servidor HTTPS + HTTP/2
+│
+├── public/                       
+│
+├── .env                          #  NO SUBIR A GITHUB
+├── .env.example                  # Plantilla de .env
+├── .gitignore                    # Archivos ignorados por Git
+├── package.json                  # Dependencias del proyecto
+├── INSTALL.txt                  
+└── README.md                    
+
+═══════════════════════════════════════════════════════════════════════════════
+  FIN DEL DOCUMENTO
+═══════════════════════════════════════════════════════════════════════════════
