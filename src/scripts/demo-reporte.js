@@ -1,5 +1,5 @@
 // scripts/demo-reporte.js
-
+//Ejecutar en otra terminal: node src/scripts/demo-reporte.js
 const http2 = require('http2');
 const https = require('https');
 const fs = require('fs');

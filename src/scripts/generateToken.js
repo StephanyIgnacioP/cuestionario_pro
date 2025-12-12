@@ -1,5 +1,5 @@
 // src/scripts/generateToken.js
-
+//Ejecutar : node src/scripts/generateToken.js admin@cuestionario.com
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv');
